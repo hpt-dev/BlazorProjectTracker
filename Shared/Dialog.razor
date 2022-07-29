@@ -1,0 +1,28 @@
+﻿@using MyApplication.Models
+
+<MudDialog>
+    <DialogContent>
+        Update Task
+    </DialogContent>
+    <DialogActions>
+        <MudTextField T="string" Label="Name" Variant="Variant.Outlined" @bind-Value="@workItem.Name" Lines="3" />
+        <MudTextField T="string" Label="Description" Variant="Variant.Outlined" @bind-Value="@workItem.Description" Lines="3" />
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    
+    string sampleText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(workItem));
+    
+    void Cancel() => MudDialog.Cancel();
+
+    [Parameter]
+    public WorkItem workItem { get; set; }
+}
+
+
