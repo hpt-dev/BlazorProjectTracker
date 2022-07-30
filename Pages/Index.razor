@@ -1,161 +1,193 @@
 ﻿@using Microsoft.AspNetCore.Components
 @using System.ComponentModel.DataAnnotations
 @using MyApplication.Models
+@using ApexCharts
 @inject IDialogService DialogService
 @page "/"
 
-<!--
-<PageTitle>Index123</PageTitle>
+<MudPaper Width="100%" Class="pa-4">
+    <MudToolBar>
+            <MudText Typo="Typo.h3" Class="pa-2">Project Tracker</MudText>
+        
+<ApexChart @ref="_chart" TItem="WorkItem" Title="" Height="75" Width="75" Options="_chartOptions">
+    <ApexPointSeries TItem="WorkItem"
+                     Items="_items"
+                     Name="Tasks by Status"
+                     SeriesType="SeriesType.Pie"
+                     XValue="@(e => e.Selector)"
+                     YAggregate="@(e => e.Count(x => true))"
+                     OrderByDescending="e=>e.Y"
+                     PointColor="e=> GetPointColor(e)"  />
+</ApexChart>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
-<MudText Class="mb-8">Welcome to your new app, powered by MudBlazor!</MudText>
-<MudAlert Severity="Severity.Normal">You can find documentation and examples on our website here: <MudLink Href="https://mudblazor.com" Typo="Typo.body2" Color="Color.Inherit"><b>www.mudblazor.com</b></MudLink></MudAlert>
--->
+           <MudTextField @bind-Value="TextValue"
+                  Label="Add a Task"
+                  Variant="Variant.Text"
+                  Clearable="true"
+                  AdornmentColor="MudBlazor.Color.Tertiary"
+                  Immediate="true" />
 
-<MudText Typo="Typo.h3">Project Tracker</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="MudBlazor.Color.Tertiary"
+               OnClick="AddDropItem"
+               Class="mt-5 ml-5 pr-4">
+        Add
+    </MudButton>
+    </MudToolBar>
 
-<MudPaper Height="100px" Width="100%">
-    <MudContainer MaxWidth="MaxWidth.Small">
-          <div class="d-flex align-center justify-space-between">
-            <MudTextField @bind-Value="TextValue" 
-                Label="Add a Task" 
-                Variant="Variant.Text" 
-                Clearable="true" 
-                Adornment="Adornment.End" 
-                AdornmentIcon="@Icons.TwoTone.CheckBox" 
-                AdornmentColor="Color.Tertiary" 
-                Immediate="true" />
+    <MudSpacer></MudSpacer>
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge">
 
-            <MudButton 
-                Variant="Variant.Filled" 
-                Color="Color.Tertiary" 
-                OnClick="AddDropItem"
-                Class="mt-5 ml-5">
-                Add to Backlog
-            </MudButton>
-          </div>
+
+           <MudDivider Class="mt-4 mb-4" />
+
+
+        <MudDropContainer @ref="_dropContainer"
+                          T="WorkItem"
+                          Items="_items"
+                          ItemsSelector="@((item,dropzone) => item.Selector == dropzone)"
+                          ItemDropped="ItemUpdated"
+                          Class="d-flex flex-wrap flex-grow-1">
+            <ChildContent>
+
+                <MudPaper Style="background-color:var(--mud-palette-info)" Width="24%" MinHeight="500px" Class="pa-2 ma-1 d-flex flex-column rounded border-solid border-2 mud-border-black">
+       
+                        <MudText Align="MudBlazor.Align.Center" Typo="Typo.h6" ><b>Backlog</b></MudText>
+                      <MudDivider Class="mb-4" />
+                    <MudDropZone T="WorkItem" Identifier="Backlog" Class="flex-grow-1"  AllowReorder="true" />
+                </MudPaper>
+
+                <MudPaper Style="background-color:var(--mud-palette-primary)" Width="24%" MinHeight="500px" Class="pa-2 ma-1 d-flex flex-column rounded border-solid border-2 mud-border-black">
+                        <MudText Align="MudBlazor.Align.Center" Typo="Typo.h6"><b>To do</b></MudText>
+                                <MudDivider Class="mb-4" />
+                               
+                    <MudDropZone T="WorkItem" Identifier="Todo" Class="flex-grow-1" AllowReorder="true" />
+                </MudPaper>
+
+                <MudPaper Style="background-color:var(--mud-palette-secondary)" Width="24%" MinHeight="500px" Class="pa-2 ma-1 d-flex flex-column rounded border-solid border-2 mud-border-black">
+                        <MudText Align="MudBlazor.Align.Center" Typo="Typo.h6"><b>In Progress</b></MudText>
+                                <MudDivider Class="mb-4" />
+                    <MudDropZone T="WorkItem" Identifier="Inprogress" Class="flex-grow-1" AllowReorder="true" />
+                </MudPaper>
+
+                <MudPaper Style="background-color:var(--mud-palette-tertiary)"  Width="24%" MinHeight="500px" Class="pa-2 ma-1 d-flex flex-column rounded border-solid border-2 mud-border-black">
+                        <MudText Align="MudBlazor.Align.Center" Typo="Typo.h6"><b>Done</b></MudText>
+                                <MudDivider Class="mb-4" />
+                    <MudDropZone T="WorkItem" Identifier="Done" Class="flex-grow-1" AllowReorder="true" />
+                </MudPaper>
+
+            </ChildContent>
+            <ItemRenderer>
+                <MudPaper Elevation="25" Width="100%" Height="125px" Class="pa-1 rounded my-2">
+                    <MudToolBar DisableGutters="true" Dense="true">
+                        <MudListItem  OnClick="@((e) => OpenEditDialog(context))" >
+                            <MudText Style="font-size:15px;border-radius:10px;width:140px;" onmouseover="this.style.backgroundColor='#006db9'" onmouseout="this.style.backgroundColor=''">@context.Name</MudText>
+                        </MudListItem>
+
+                        <MudListItem OnClick="@((e) => OpenDeleteDialog(context))">
+                            <MudIcon Icon="@Icons.Filled.Delete" Title="Delete" Class="mr-2" Style="float:right;border-radius:10px; margin:10px;" onmouseover="this.style.backgroundColor='#006db9'" onmouseout="this.style.backgroundColor=''" />
+                        </MudListItem>
+                    </MudToolBar>
+
+                    <MudText Class="ma-2 pa-2" Style="font-size:11px;"><b>Details:</b> @context.Description</MudText>
+
+                </MudPaper>
+            </ItemRenderer>
+        </MudDropContainer>
     </MudContainer>
 </MudPaper>
 
-<MudDropContainer @ref="_dropContainer" T="WorkItem" Items="_items" ItemsSelector="@((item,dropzone) => item.Selector == dropzone)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-1">
-    <ChildContent>
-        <MudPaper Class="ma-4 flex-grow-1">
-            <MudList Clickable="true" Class="d-flex flex-column mud-height-full">
-                <MudListSubheader>Backlog</MudListSubheader>
-                <MudDropZone T="WorkItem" Identifier="Backlog" Class="flex-grow-1" AllowReorder="true" >
-                    
-                </MudDropZone>
-
-            </MudList>
-        </MudPaper>
-
-        <MudPaper Class="ma-4 flex-grow-1">
-            <MudList Clickable="true" Class="d-flex flex-column mud-height-full">
-                <MudListSubheader>Todo</MudListSubheader>
-                <MudDropZone T="WorkItem" Identifier="Todo" Class="flex-grow-1" AllowReorder="true" />
-            </MudList>
-        </MudPaper>
-        
-        <MudPaper Class="ma-4 flex-grow-1">
-            <MudList Clickable="true" Class="d-flex flex-column mud-height-full">
-                <MudListSubheader>In Progress</MudListSubheader>
-                <MudDropZone T="WorkItem" Identifier="Inprogress" Class="flex-grow-1" AllowReorder="true" />
-            </MudList>
-        </MudPaper>
-        
-        <MudPaper Class="ma-4 flex-grow-1">
-            <MudList Clickable="true" Class="d-flex flex-column mud-height-full">
-                <MudListSubheader>Done</MudListSubheader>
-                <MudDropZone T="WorkItem" Identifier="Done" Class="flex-grow-1" AllowReorder="true" />
-            </MudList>
-        </MudPaper>
-    </ChildContent>
-    <ItemRenderer>
-        <MudPaper Height="100px" Width="100%">
-            <MudListItem Text="@context.Name" OnClick="@((e) => OpenDialog(context))" />
-        </MudPaper>
-    </ItemRenderer>
-</MudDropContainer>
-
-<MudPaper Class="pa-4">
-    <MudChart ChartType="ChartType.Pie" InputData="@data" @bind-SelectedIndex="PieIndex" InputLabels="@labels" Width="300px" Height="300px" />
-</MudPaper>
-
-
 @code {
     private MudDropContainer<WorkItem> _dropContainer;
+    private ApexChart<WorkItem> _chart;
+
+    private ApexChartOptions<WorkItem> _chartOptions { get; set; } = new();
 
     public string TextValue { get; set; }
 
-    private async Task OpenDialog(WorkItem item)
+    private async Task OpenEditDialog(WorkItem item)
     {
         var parameters = new DialogParameters();
         parameters.Add("workItem", item);
 
         var options = new DialogOptions { CloseOnEscapeKey = true };
 
-        var dialog = DialogService.Show<Dialog>("Update Task", parameters, options);
+        var dialog = DialogService.Show<EditDialog>("Edit Task", parameters, options);
 
         var result = await dialog.Result;
-        //
+
         if (!result.Cancelled)
         {
-            _dropContainer.Refresh(); 
-
-            //var updatedItem = (WorkItem)result.Data;
-        
-            //_items.FirstOrDefault(x => x.Name == updatedItem.Name).Description = updatedItem.Description;
-        
-            //In a real world scenario we would reload the data from the source here since we "removed" it in the dialog already.
-            //Guid.TryParse(result.Data.ToString(), out Guid deletedServer);
-            //Servers.RemoveAll(item => item.Id == deletedServer);
+            _dropContainer.Refresh();
         }
-
     }
 
-    private void AddDropItem()
+    private async Task OpenDeleteDialog(WorkItem item)
     {
-        _items.Add(new WorkItem(){Name = TextValue, Selector = "Backlog"});
+        var parameters = new DialogParameters();
+        parameters.Add("workItem", item);
 
-        TextValue = "";
-        _dropContainer.Refresh(); 
-        UpdatePieChart();
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = DialogService.Show<DeleteDialog>("Confirm Delete", parameters, options);
+
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            var workItem = (WorkItem)result.Data;
+            _items.Remove(workItem);
+            _dropContainer.Refresh();
+            await _chart.RenderAsync();
+        }
     }
 
-    private void ItemUpdated(MudItemDropInfo<WorkItem> dropItem)
+    private async Task AddDropItem()
+    {
+        _items.Add(new WorkItem() { Name = TextValue, Selector = "Backlog" });
+        TextValue = "";
+        _dropContainer.Refresh();
+        await _chart.RenderAsync();
+    }
+
+    private async Task ItemUpdated(MudItemDropInfo<WorkItem> dropItem)
     {
         dropItem.Item.Selector = dropItem.DropzoneIdentifier;
-        UpdatePieChart();
+        await _chart.RenderAsync();
     }
 
     private List<WorkItem> _items = new()
     {
-        new WorkItem(){ Name = "Item 1", Selector = "Backlog", Description="Do Item1 asap" },
-        new WorkItem(){ Name = "Item 2", Selector = "Todo", Description="Do Item2 asap" },
-        new WorkItem(){ Name = "Item 3", Selector = "Todo" },
-        new WorkItem(){ Name = "Item 4", Selector = "Backlog" },
-        new WorkItem(){ Name = "Item 5", Selector = "Backlog" },
+        new WorkItem(){ Name = "Finish SQL Tables", Selector = "Backlog", Description="Add additional create statements." },
+        new WorkItem(){ Name = "Finish SQL Inserts", Selector = "Backlog", Description="Need to create default Task data." },
+        new WorkItem(){ Name = "Refactor API", Selector = "Backlog", Description="Do this at some point." },
+        new WorkItem(){ Name = "Finish API", Selector = "Todo",    Description="Task controller is missing some endpoints." },
+        new WorkItem(){ Name = "Update Nuget", Selector = "Todo", Description="Some nuget packages are out of date, including Entityframeworkcore." },
+        new WorkItem(){ Name = "Refactor class", Selector = "Done", Description="Refactor controller class and remove some dependencies." },
+        new WorkItem(){ Name = "Update models", Selector = "Inprogress", Description="Update task model to include task type." },
     };
 
     protected override void OnInitialized()
     {
-        UpdatePieChart();
+        _chartOptions.Legend = new Legend { Show = false };
     }
 
-    private void UpdatePieChart()
+    private string GetPointColor(WorkItem task)
     {
-        data[0] = _items.Count(x => x.Selector == "Backlog");
-        data[1] = _items.Count(x => x.Selector == "Todo");
-        data[2] = _items.Count(x => x.Selector == "Inprogress");
-        data[3] = _items.Count(x => x.Selector == "Done");
+        switch (task.Selector)
+        {
+            case "Backlog":
+                return "#2196f3ff"; //MudBlazor.Color.Info.ToString();
+            case "Todo":
+                return "#594ae2ff"; //MudBlazor.Color.Primary.ToString();
+            case "Inprogress":
+                return "#ff4081ff"; // MudBlazor.Color.Secondary.ToString();
+            case "Done":
+                return "#1ec8a5ff"; // MudBlazor.Color.Tertiary.ToString();
+            default:
+                return "#87775d";
+        }
     }
-
-
-    private int PieIndex = -1; //default value cannot be 0 -> first selectedindex is 0.
-    int dataSize = 4;
-    double[] data = { 0,0,0,0 };
-    string[] labels = { "Backlog", "Todo", "In Progress", "Done"};
-
 }
 
 

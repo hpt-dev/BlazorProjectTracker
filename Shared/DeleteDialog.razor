@@ -1,0 +1,25 @@
+﻿@using MyApplication.Models
+
+<MudDialog>
+    <DialogContent>
+        <div class="d-flex flex-column py-1">
+            Delete task '@workItem.Name'?
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Error" OnClick="Submit">Delete</MudButton>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(workItem));
+
+    void Cancel() => MudDialog.Cancel();
+
+    [Parameter]
+    public WorkItem workItem { get; set; }
+}
