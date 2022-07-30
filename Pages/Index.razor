@@ -20,12 +20,14 @@
                      PointColor="e=> GetPointColor(e)"  />
 </ApexChart>
 
-           <MudTextField @bind-Value="TextValue"
+           <MudTextField @bind-Value="_newTaskName"
                   Label="Add a Task"
                   Variant="Variant.Text"
                   Clearable="true"
                   AdornmentColor="MudBlazor.Color.Tertiary"
-                  Immediate="true" />
+                  Immediate="true" 
+                  OnKeyPress="e => AddTaskOnEnter(e)"
+                  Validation="@(new MinLengthAttribute(2){ ErrorMessage = "Task name must be at least 2 characters."})"/>
 
     <MudButton Variant="Variant.Filled"
                Color="MudBlazor.Color.Tertiary"
@@ -88,9 +90,7 @@
                             <MudIcon Icon="@Icons.Filled.Delete" Title="Delete" Class="mr-2" Style="float:right;border-radius:10px; margin:10px;" onmouseover="this.style.backgroundColor='#006db9'" onmouseout="this.style.backgroundColor=''" />
                         </MudListItem>
                     </MudToolBar>
-
                     <MudText Class="ma-2 pa-2" Style="font-size:11px;"><b>Details:</b> @context.Description</MudText>
-
                 </MudPaper>
             </ItemRenderer>
         </MudDropContainer>
@@ -103,7 +103,8 @@
 
     private ApexChartOptions<WorkItem> _chartOptions { get; set; } = new();
 
-    public string TextValue { get; set; }
+    [MinLength(2, ErrorMessage = "Task name must be at least 2 characters.")]
+    public string _newTaskName { get; set; }
 
     private async Task OpenEditDialog(WorkItem item)
     {
@@ -144,16 +145,27 @@
 
     private async Task AddDropItem()
     {
-        _items.Add(new WorkItem() { Name = TextValue, Selector = "Backlog" });
-        TextValue = "";
-        _dropContainer.Refresh();
-        await _chart.RenderAsync();
+        if(_newTaskName?.Length> 0)
+        {
+            _items.Add(new WorkItem() { Name = _newTaskName, Selector = "Backlog" });
+            _newTaskName = "";
+            _dropContainer.Refresh();
+            await _chart.RenderAsync();
+        }
     }
 
     private async Task ItemUpdated(MudItemDropInfo<WorkItem> dropItem)
     {
         dropItem.Item.Selector = dropItem.DropzoneIdentifier;
         await _chart.RenderAsync();
+    }
+
+    private async Task AddTaskOnEnter(KeyboardEventArgs  e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            await AddDropItem();
+        }
     }
 
     private List<WorkItem> _items = new()
